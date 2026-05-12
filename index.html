@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Painel do Sistema</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  /* =====================================================
+     EDITE APENAS A SEÇÃO "DATA" NO FINAL DO <script>
+     Status válidos: "done" | "rev" | "todo" | "nd"
+  ===================================================== */
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0f0f0f;
+    --bg2:      #161616;
+    --bg3:      #1e1e1e;
+    --border:   #2a2a2a;
+    --border2:  #333;
+    --text:     #e8e8e2;
+    --muted:    #666;
+    --muted2:   #444;
+    --done:     #1D9E75;
+    --done-bg:  #0a2e22;
+    --done-txt: #5fcca0;
+    --rev:      #d4860f;
+    --rev-bg:   #2e1f05;
+    --rev-txt:  #f5b44a;
+    --todo:     #c0392b;
+    --todo-bg:  #2e0e0a;
+    --todo-txt: #f07060;
+    --nd:       #555;
+    --nd-bg:    #1a1a1a;
+    --nd-txt:   #888;
+    --accent:   #e8e8e2;
+    --mono:     'IBM Plex Mono', monospace;
+    --sans:     'IBM Plex Sans', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 32px 24px 64px;
+  }
+
+  header {
+    margin-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  header h1 {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  header p {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-top: 4px;
+  }
+
+  .global-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .global-bar .pct {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--done);
+    line-height: 1;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .stat {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+
+  .stat:hover, .stat.active { border-color: var(--border2); background: var(--bg3); }
+
+  .stat.active[data-f="done"]  { border-color: var(--done); }
+  .stat.active[data-f="rev"]   { border-color: var(--rev); }
+  .stat.active[data-f="todo"]  { border-color: var(--todo); }
+  .stat.active[data-f="nd"]    { border-color: var(--nd); }
+
+  .stat-n {
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-n.c-done { color: var(--done); }
+  .stat-n.c-rev  { color: var(--rev); }
+  .stat-n.c-todo { color: var(--todo); }
+  .stat-n.c-nd   { color: var(--nd); }
+  .stat-n.c-pct  { color: var(--text); }
+
+  .stat-l {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+  }
+
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color .15s;
+  }
+
+  .card:hover { border-color: var(--border2); }
+
+  .card-head {
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .card-name {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .03em;
+    color: var(--text);
+    text-transform: uppercase;
+  }
+
+  .card-count {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .prog-track {
+    height: 2px;
+    background: var(--border);
+  }
+
+  .prog-fill {
+    height: 2px;
+    transition: width .4s ease;
+  }
+
+  .prog-done { background: var(--done); }
+  .prog-rev  { background: var(--rev); }
+  .prog-todo { background: var(--todo); }
+  .prog-nd   { background: var(--nd); }
+
+  .card-body { padding: 6px 0 4px; }
+
+  .item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 14px;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+    transition: background .1s;
+  }
+
+  .item:last-child { border-bottom: none; }
+  .item:hover { background: var(--bg3); }
+
+  .item-name {
+    font-size: 12px;
+    color: #aaa;
+    flex: 1;
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    white-space: nowrap;
+  }
+
+  .b-done { background: var(--done-bg); color: var(--done-txt); }
+  .b-rev  { background: var(--rev-bg);  color: var(--rev-txt); }
+  .b-todo { background: var(--todo-bg); color: var(--todo-txt); }
+  .b-nd   { background: var(--nd-bg);   color: var(--nd-txt); }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .legend span { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  .legend span:hover { color: var(--text); }
+
+  .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .d-done { background: var(--done); }
+  .d-rev  { background: var(--rev); }
+  .d-todo { background: var(--todo); }
+  .d-nd   { background: var(--nd); }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted2);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>// painel do sistema</h1>
+    <p id="subtitle">carregando...</p>
+  </div>
+  <div class="global-bar">
+    <div>
+      <div class="pct" id="pct-global">0%</div>
+      <div style="font-size:10px;margin-top:2px">concluído</div>
+    </div>
+  </div>
+</header>
+
+<div class="stats" id="stats"></div>
+
+<div class="legend">
+  <span onclick="setFilter('all')"><span class="dot" style="background:var(--muted)"></span>Todos</span>
+  <span onclick="setFilter('done')"><span class="dot d-done"></span>Feito</span>
+  <span onclick="setFilter('rev')"><span class="dot d-rev"></span>Revisar</span>
+  <span onclick="setFilter('todo')"><span class="dot d-todo"></span>Falta fazer</span>
+  <span onclick="setFilter('nd')"><span class="dot d-nd"></span>Não definido</span>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<footer id="footer"></footer>
+
+<script>
+/* =====================================================
+   ✏️  EDITE AQUI — adicione, remova ou mude status
+   Status: "done" | "rev" | "todo" | "nd"
+===================================================== */
+const modules = [
+  {
+    name: "Admin",
+    items: [
+      { n: "Painel admin", s: "todo" }
+    ]
+  },
+  {
+    name: "Cadastro — Produto",
+    items: [
+      { n: "Consultar",           s: "done" },
+      { n: "Cadastrar",           s: "done" },
+      { n: "Consultar preço",     s: "done" },
+      { n: "Grade",               s: "done" },
+      { n: "Grupo",               s: "done" },
+      { n: "SubGrupo",            s: "done" },
+      { n: "Fabricante",          s: "done" },
+      { n: "Coleção",             s: "done" },
+      { n: "Tipo de produto",     s: "done" },
+      { n: "Marca",               s: "done" },
+      { n: "Etiqueta",            s: "done" },
+      { n: "Promoção",            s: "todo" },
+      { n: "Combo / Kit",         s: "todo" },
+      { n: "Unidade de medida",   s: "todo" }
+    ]
+  },
+  {
+    name: "Cadastro — Pessoa",
+    items: [
+      { n: "Consultar",  s: "done" },
+      { n: "Cadastrar",  s: "done" },
+      { n: "Grupo",      s: "todo" }
+    ]
+  },
+  {
+    name: "Fiscal",
+    items: [
+      { n: "CFOP",         s: "done" },
+      { n: "CST ICMS",     s: "done" },
+      { n: "Regra fiscal", s: "done" }
+    ]
+  },
+  {
+    name: "Financeiro — Cadastro",
+    items: [
+      { n: "Tipo de pagamento", s: "done" },
+      { n: "Prazo pagamento",   s: "done" },
+      { n: "Plano de contas",   s: "done" },
+      { n: "Centro de custo",   s: "todo" },
+      { n: "Conta bancária",    s: "done" },
+      { n: "Caixa",             s: "todo" }
+    ]
+  },
+  {
+    name: "Setor / Estoque — Cad.",
+    items: [
+      { n: "Consultar",  s: "todo" },
+      { n: "Cadastrar",  s: "todo" }
+    ]
+  },
+  {
+    name: "Usuários",
+    items: [
+      { n: "Consultar",          s: "todo" },
+      { n: "Cadastrar",          s: "todo" },
+      { n: "Grupo / Permissões", s: "todo" }
+    ]
+  },
+  {
+    name: "Vendas",
+    items: [
+      { n: "Consultar",  s: "done" },
+      { n: "Cadastrar",  s: "done" }
+    ]
+  },
+  {
+    name: "Condicional",
+    items: [
+      { n: "Consultar",  s: "done" },
+      { n: "Cadastrar",  s: "rev" }
+    ]
+  },
+  {
+    name: "PDV",
+    items: [
+      { n: "Consultar",        s: "done" },
+      { n: "Entrar PDV",       s: "done" },
+      { n: "Consulta de caixa",s: "todo" },
+      { n: "Abrir caixa",      s: "done" },
+      { n: "Fechar caixa",     s: "done" }
+    ]
+  },
+  {
+    name: "Troca",
+    items: [
+      { n: "Consultar",  s: "done" },
+      { n: "Cadastrar",  s: "rev" }
+    ]
+  },
+  {
+    name: "Compras",
+    items: [
+      { n: "Consultar",    s: "done" },
+      { n: "Cadastrar",    s: "done" },
+      { n: "Importar XML", s: "done" },
+      { n: "Manifesto",    s: "done" }
+    ]
+  },
+  {
+    name: "Financeiro — Operacional",
+    items: [
+      { n: "Contas a pagar",      s: "done" },
+      { n: "Contas a receber",    s: "done" },
+      { n: "Gestão financeira",   s: "todo" },
+      { n: "Fluxo de caixa",      s: "todo" },
+      { n: "Conciliação bancária",s: "rev"  },
+      { n: "Histórico de caixa",  s: "todo" }
+    ]
+  },
+  {
+    name: "Estoque",
+    items: [
+      { n: "Balanço",                 s: "todo" },
+      { n: "Acerto de estoque",       s: "todo" },
+      { n: "Transferência de estoque",s: "todo" }
+    ]
+  },
+  {
+    name: "Fiscal — Operacional",
+    items: [
+      { n: "Gerar Sintegra",      s: "todo" },
+      { n: "Gestão de documentos",s: "todo" }
+    ]
+  },
+  {
+    name: "Relatórios",
+    items: [
+      { n: "A definir", s: "nd" }
+    ]
+  },
+  {
+    name: "Integrações",
+    items: [
+      { n: "A definir", s: "nd" }
+    ]
+  },
+  {
+    name: "CRM",
+    items: [
+      { n: "A definir", s: "nd" }
+    ]
+  }
+];
+/* ===================================================== */
+
+const label = { done:"Feito", rev:"Revisar", todo:"Falta fazer", nd:"Não definido" };
+const bcls  = { done:"b-done", rev:"b-rev", todo:"b-todo", nd:"b-nd" };
+let activeFilter = "all";
+
+function allItems() {
+  return modules.flatMap(m => m.items);
+}
+
+function renderStats() {
+  const all = allItems();
+  const d = all.filter(i=>i.s==="done").length;
+  const r = all.filter(i=>i.s==="rev").length;
+  const t = all.filter(i=>i.s==="todo").length;
+  const n = all.filter(i=>i.s==="nd").length;
+  const total = all.length;
+  const pct = Math.round(d / total * 100);
+
+  document.getElementById("pct-global").textContent = pct + "%";
+  document.getElementById("subtitle").textContent =
+    `${total} itens em ${modules.length} módulos`;
+  document.getElementById("footer").textContent =
+    `atualizado manualmente · ${total} itens · ${modules.length} módulos`;
+
+  const data = [
+    { f:"done", n:d, label:"Feito",       cls:"c-done" },
+    { f:"rev",  n:r, label:"Revisar",     cls:"c-rev"  },
+    { f:"todo", n:t, label:"Falta fazer", cls:"c-todo" },
+    { f:"nd",   n:n, label:"N/D",         cls:"c-nd"   },
+    { f:"all",  n:total, label:"Total",   cls:"c-pct"  },
+  ];
+
+  document.getElementById("stats").innerHTML = data.map(s => `
+    <div class="stat${activeFilter===s.f?" active":""}" data-f="${s.f}" onclick="setFilter('${s.f}')">
+      <div class="stat-n ${s.cls}">${s.n}</div>
+      <div class="stat-l">${s.label}</div>
+    </div>
+  `).join("");
+}
+
+function progClass(items) {
+  if (items.every(i=>i.s==="nd")) return "prog-nd";
+  if (items.some(i=>i.s==="todo")) return "prog-todo";
+  if (items.some(i=>i.s==="rev"))  return "prog-rev";
+  return "prog-done";
+}
+
+function renderGrid() {
+  const filtered = modules
+    .map(m => ({
+      ...m,
+      items: activeFilter === "all" ? m.items : m.items.filter(i => i.s === activeFilter)
+    }))
+    .filter(m => m.items.length > 0);
+
+  document.getElementById("grid").innerHTML = filtered.map(m => {
+    const total = m.items.length;
+    const done  = m.items.filter(i=>i.s==="done").length;
+    const pct   = Math.round(done / total * 100);
+    const pc    = progClass(m.items);
+
+    return `
+      <div class="card">
+        <div class="card-head">
+          <span class="card-name">${m.name}</span>
+          <span class="card-count">${done}/${total}</span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill ${pc}" style="width:${pct}%"></div>
+        </div>
+        <div class="card-body">
+          ${m.items.map(i => `
+            <div class="item">
+              <span class="item-name">${i.n}</span>
+              <span class="badge ${bcls[i.s]}">${label[i.s]}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  renderStats();
+  renderGrid();
+}
+
+renderStats();
+renderGrid();
+</script>
+</body>
+</html>
