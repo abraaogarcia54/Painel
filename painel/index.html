@@ -8,11 +8,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
-  /* =====================================================
-     EDITE APENAS A SEÇÃO "DATA" NO FINAL DO <script>
-     Status válidos: "done" | "rev" | "todo" | "nd"
-  ===================================================== */
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
@@ -139,6 +134,70 @@
     letter-spacing: .06em;
   }
 
+  /* ---- top bar (legend + actions) ---- */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .legend span { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  .legend span:hover { color: var(--text); }
+
+  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .d-done { background: var(--done); }
+  .d-rev  { background: var(--rev); }
+  .d-todo { background: var(--todo); }
+  .d-nd   { background: var(--nd); }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .saved-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--done);
+    opacity: 0;
+    transition: opacity .3s;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .saved-tag.show { opacity: 1; }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 5px 11px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    border: 1px solid var(--border2);
+    background: var(--bg2);
+    color: var(--muted);
+    transition: all .15s;
+  }
+  .btn:hover { background: var(--bg3); color: var(--text); }
+  .btn-danger:hover { border-color: var(--todo); color: var(--todo-txt); background: var(--todo-bg); }
+
+  /* ---- grid ---- */
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -152,7 +211,6 @@
     overflow: hidden;
     transition: border-color .15s;
   }
-
   .card:hover { border-color: var(--border2); }
 
   .card-head {
@@ -171,6 +229,34 @@
     letter-spacing: .03em;
     color: var(--text);
     text-transform: uppercase;
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+  }
+  .card-name:hover { color: var(--done-txt); }
+
+  .card-name-input {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    background: var(--bg3);
+    border: 1px solid var(--done);
+    border-radius: 3px;
+    color: var(--text);
+    padding: 2px 6px;
+    outline: none;
+    width: 100%;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .card-head-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
   }
 
   .card-count {
@@ -180,20 +266,28 @@
     white-space: nowrap;
   }
 
-  .prog-track {
-    height: 2px;
-    background: var(--border);
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0 2px;
+    opacity: 0;
+    transition: opacity .1s, color .1s;
+    display: flex;
+    align-items: center;
   }
+  .card:hover .icon-btn { opacity: 1; }
+  .icon-btn:hover { color: var(--todo-txt); }
 
-  .prog-fill {
-    height: 2px;
-    transition: width .4s ease;
-  }
-
-  .prog-done { background: var(--done); }
-  .prog-rev  { background: var(--rev); }
-  .prog-todo { background: var(--todo); }
-  .prog-nd   { background: var(--nd); }
+  .prog-track { height: 2px; background: var(--border); }
+  .prog-fill  { height: 2px; transition: width .4s ease; }
+  .prog-done  { background: var(--done); }
+  .prog-rev   { background: var(--rev); }
+  .prog-todo  { background: var(--todo); }
+  .prog-nd    { background: var(--nd); }
 
   .card-body { padding: 6px 0 4px; }
 
@@ -206,9 +300,23 @@
     border-bottom: 1px solid var(--border);
     transition: background .1s;
   }
-
   .item:last-child { border-bottom: none; }
   .item:hover { background: var(--bg3); }
+
+  .item-del {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted2);
+    font-size: 13px;
+    line-height: 1;
+    padding: 0 2px;
+    opacity: 0;
+    transition: opacity .1s, color .1s;
+    flex-shrink: 0;
+  }
+  .item:hover .item-del { opacity: 1; }
+  .item-del:hover { color: var(--todo-txt); }
 
   .item-name {
     font-size: 12px;
@@ -225,37 +333,126 @@
     text-transform: uppercase;
     letter-spacing: .05em;
     white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition: filter .1s;
   }
+  .badge:hover { filter: brightness(1.25); }
 
   .b-done { background: var(--done-bg); color: var(--done-txt); }
   .b-rev  { background: var(--rev-bg);  color: var(--rev-txt); }
   .b-todo { background: var(--todo-bg); color: var(--todo-txt); }
   .b-nd   { background: var(--nd-bg);   color: var(--nd-txt); }
 
-  .legend {
+  /* ---- add item form ---- */
+  .add-item-row {
     display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
+    gap: 6px;
+    padding: 7px 14px;
+    border-top: 1px solid var(--border);
+  }
+  .add-item-row input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 12px;
+    outline: none;
+    min-width: 0;
+  }
+  .add-item-row input:focus { border-color: var(--done); }
+  .add-item-row button {
+    background: var(--done-bg);
+    border: 1px solid var(--done);
+    border-radius: 4px;
+    color: var(--done-txt);
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 4px 8px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .add-item-row button:hover { background: var(--done); color: #fff; }
+  .add-item-row .cancel-btn {
+    background: none;
+    border-color: var(--border2);
+    color: var(--muted);
+  }
+  .add-item-row .cancel-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--border2); }
+
+  .add-item-link {
+    display: block;
+    padding: 7px 14px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted2);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    cursor: pointer;
+    border-top: 1px solid var(--border);
+    transition: color .1s, background .1s;
+    text-align: center;
+  }
+  .add-item-link:hover { color: var(--done-txt); background: var(--bg3); }
+
+  /* ---- add module card ---- */
+  .card-add-module {
+    background: none;
+    border: 1px dashed var(--border2);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    padding: 16px;
+    gap: 10px;
+  }
+  .card-add-module:hover { border-color: var(--done); background: var(--done-bg); }
+  .card-add-module span {
     font-family: var(--mono);
     font-size: 10px;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: .06em;
   }
+  .card-add-module:hover span { color: var(--done-txt); }
 
-  .legend span { display: flex; align-items: center; gap: 5px; cursor: pointer; }
-  .legend span:hover { color: var(--text); }
-
-  .dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    flex-shrink: 0;
+  .add-module-row {
+    display: flex;
+    gap: 6px;
+    width: 100%;
   }
-
-  .d-done { background: var(--done); }
-  .d-rev  { background: var(--rev); }
-  .d-todo { background: var(--todo); }
-  .d-nd   { background: var(--nd); }
+  .add-module-row input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--done);
+    border-radius: 4px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    outline: none;
+    min-width: 0;
+  }
+  .add-module-row button {
+    background: var(--done-bg);
+    border: 1px solid var(--done);
+    border-radius: 4px;
+    color: var(--done-txt);
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  .add-module-row button:hover { background: var(--done); color: #fff; }
 
   footer {
     margin-top: 48px;
@@ -285,12 +482,19 @@
 
 <div class="stats" id="stats"></div>
 
-<div class="legend">
-  <span onclick="setFilter('all')"><span class="dot" style="background:var(--muted)"></span>Todos</span>
-  <span onclick="setFilter('done')"><span class="dot d-done"></span>Feito</span>
-  <span onclick="setFilter('rev')"><span class="dot d-rev"></span>Revisar</span>
-  <span onclick="setFilter('todo')"><span class="dot d-todo"></span>Falta fazer</span>
-  <span onclick="setFilter('nd')"><span class="dot d-nd"></span>Não definido</span>
+<div class="top-bar">
+  <div class="legend">
+    <span onclick="setFilter('all')"><span class="dot" style="background:var(--muted)"></span>Todos</span>
+    <span onclick="setFilter('done')"><span class="dot d-done"></span>Feito</span>
+    <span onclick="setFilter('rev')"><span class="dot d-rev"></span>Revisar</span>
+    <span onclick="setFilter('todo')"><span class="dot d-todo"></span>Falta fazer</span>
+    <span onclick="setFilter('nd')"><span class="dot d-nd"></span>Não definido</span>
+  </div>
+  <div class="actions">
+    <span class="saved-tag" id="saved">salvo ✓</span>
+    <button class="btn" onclick="exportData()" title="Copia os dados como JSON">exportar</button>
+    <button class="btn btn-danger" onclick="resetData()" title="Volta aos dados originais">resetar</button>
+  </div>
 </div>
 
 <div class="grid" id="grid"></div>
@@ -298,11 +502,7 @@
 <footer id="footer"></footer>
 
 <script>
-/* =====================================================
-   ✏️  EDITE AQUI — adicione, remova ou mude status
-   Status: "done" | "rev" | "todo" | "nd"
-===================================================== */
-const modules = [
+const DEFAULT_MODULES = [
   {
     name: "Admin",
     items: [
@@ -359,14 +559,14 @@ const modules = [
     ]
   },
   {
-    name: "Cadastro - SetorEstoque",
+    name: "Cadastro - Setor/Estoque",
     items: [
       { n: "Consultar",  s: "todo" },
       { n: "Cadastrar",  s: "todo" }
     ]
   },
   {
-    name: "Cadastro -  Usuários",
+    name: "Cadastro - Usuários",
     items: [
       { n: "Consultar",          s: "todo" },
       { n: "Cadastrar",          s: "todo" },
@@ -390,11 +590,11 @@ const modules = [
   {
     name: "Vendas - PDV",
     items: [
-      { n: "Consultar",        s: "done" },
-      { n: "Entrar PDV",       s: "done" },
-      { n: "Consulta de caixa",s: "todo" },
-      { n: "Abrir caixa",      s: "done" },
-      { n: "Fechar caixa",     s: "done" }
+      { n: "Consultar",         s: "done" },
+      { n: "Entrar PDV",        s: "done" },
+      { n: "Consulta de caixa", s: "todo" },
+      { n: "Abrir caixa",       s: "done" },
+      { n: "Fechar caixa",      s: "done" }
     ]
   },
   {
@@ -423,27 +623,27 @@ const modules = [
   {
     name: "Financeiro",
     items: [
-      { n: "Contas a pagar",      s: "done" },
-      { n: "Contas a receber",    s: "done" },
-      { n: "Gestão financeira",   s: "todo" },
-      { n: "Fluxo de caixa",      s: "todo" },
-      { n: "Conciliação bancária",s: "rev"  },
-      { n: "Histórico de caixa",  s: "todo" }
+      { n: "Contas a pagar",       s: "done" },
+      { n: "Contas a receber",     s: "done" },
+      { n: "Gestão financeira",    s: "todo" },
+      { n: "Fluxo de caixa",       s: "todo" },
+      { n: "Conciliação bancária", s: "rev"  },
+      { n: "Histórico de caixa",   s: "todo" }
     ]
   },
   {
     name: "Estoque",
     items: [
-      { n: "Balanço",                 s: "todo" },
-      { n: "Acerto de estoque",       s: "todo" },
-      { n: "Transferência de estoque",s: "todo" }
+      { n: "Balanço",                  s: "todo" },
+      { n: "Acerto de estoque",        s: "todo" },
+      { n: "Transferência de estoque", s: "todo" }
     ]
   },
   {
     name: "Fiscal",
     items: [
-      { n: "Gerar Sintegra",      s: "todo" },
-      { n: "Gestão de documentos",s: "todo" }
+      { n: "Gerar Sintegra",       s: "todo" },
+      { n: "Gestão de documentos", s: "todo" }
     ]
   },
   {
@@ -465,98 +665,297 @@ const modules = [
     ]
   }
 ];
-/* ===================================================== */
 
-const label = { done:"Feito", rev:"Revisar", todo:"Falta fazer", nd:"Não definido" };
-const bcls  = { done:"b-done", rev:"b-rev", todo:"b-todo", nd:"b-nd" };
-let activeFilter = "all";
+const STORAGE_KEY = 'painel-modules-v1';
+const statusOrder = ['done', 'rev', 'todo', 'nd'];
+const label = { done: "Feito", rev: "Revisar", todo: "Falta fazer", nd: "Não definido" };
+const bcls  = { done: "b-done", rev: "b-rev", todo: "b-todo", nd: "b-nd" };
+
+let modules = [];
+let activeFilter   = "all";
+let editingModule  = null; // index being renamed
+let addingToModule = null; // index getting new item, or -1 for new module
+
+/* ---- persistence ---- */
+function loadModules() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (_) {}
+  return JSON.parse(JSON.stringify(DEFAULT_MODULES));
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(modules));
+  const el = document.getElementById('saved');
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+/* ---- helpers ---- */
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 function allItems() {
   return modules.flatMap(m => m.items);
 }
 
-function renderStats() {
-  const all = allItems();
-  const d = all.filter(i=>i.s==="done").length;
-  const r = all.filter(i=>i.s==="rev").length;
-  const t = all.filter(i=>i.s==="todo").length;
-  const n = all.filter(i=>i.s==="nd").length;
-  const total = all.length;
-  const pct = Math.round(d / total * 100);
+/* ---- mutations ---- */
+function cycleStatus(mi, ii) {
+  const item = modules[mi].items[ii];
+  item.s = statusOrder[(statusOrder.indexOf(item.s) + 1) % statusOrder.length];
+  save();
+  render();
+}
 
-  document.getElementById("pct-global").textContent = pct + "%";
-  document.getElementById("subtitle").textContent =
-    `${total} itens em ${modules.length} módulos`;
-  document.getElementById("footer").textContent =
-    `atualizado manualmente · ${total} itens · ${modules.length} módulos`;
+function deleteItem(mi, ii) {
+  modules[mi].items.splice(ii, 1);
+  save();
+  render();
+}
+
+function deleteModule(mi) {
+  if (!confirm(`Remover o módulo "${modules[mi].name}"?`)) return;
+  modules.splice(mi, 1);
+  if (editingModule === mi) editingModule = null;
+  save();
+  render();
+}
+
+function startRename(mi) {
+  editingModule = mi;
+  renderGrid();
+  setTimeout(() => {
+    const el = document.getElementById(`rename-${mi}`);
+    if (el) { el.focus(); el.select(); }
+  }, 0);
+}
+
+function commitRename(mi) {
+  const el = document.getElementById(`rename-${mi}`);
+  const name = el ? el.value.trim() : '';
+  if (name) modules[mi].name = name;
+  editingModule = null;
+  save();
+  renderGrid();
+}
+
+function renameKeydown(e, mi) {
+  if (e.key === 'Enter') commitRename(mi);
+  if (e.key === 'Escape') { editingModule = null; renderGrid(); }
+  e.stopPropagation();
+}
+
+function showAddItem(mi) {
+  addingToModule = mi;
+  renderGrid();
+  setTimeout(() => {
+    const el = document.getElementById(`new-item-${mi}`);
+    if (el) el.focus();
+  }, 0);
+}
+
+function cancelAddItem() {
+  addingToModule = null;
+  renderGrid();
+}
+
+function commitAddItem(mi) {
+  const el = document.getElementById(`new-item-${mi}`);
+  const name = el ? el.value.trim() : '';
+  if (!name) { cancelAddItem(); return; }
+  modules[mi].items.push({ n: name, s: 'todo' });
+  addingToModule = null;
+  save();
+  render();
+}
+
+function addItemKeydown(e, mi) {
+  if (e.key === 'Enter') commitAddItem(mi);
+  if (e.key === 'Escape') cancelAddItem();
+  e.stopPropagation();
+}
+
+function showAddModule() {
+  addingToModule = -1;
+  renderGrid();
+  setTimeout(() => {
+    const el = document.getElementById('new-module-input');
+    if (el) el.focus();
+  }, 0);
+}
+
+function cancelAddModule() {
+  addingToModule = null;
+  renderGrid();
+}
+
+function commitAddModule() {
+  const el = document.getElementById('new-module-input');
+  const name = el ? el.value.trim() : '';
+  if (!name) { cancelAddModule(); return; }
+  modules.push({ name, items: [] });
+  addingToModule = null;
+  save();
+  render();
+}
+
+function addModuleKeydown(e) {
+  if (e.key === 'Enter') commitAddModule();
+  if (e.key === 'Escape') cancelAddModule();
+  e.stopPropagation();
+}
+
+function exportData() {
+  const json = JSON.stringify(modules, null, 2);
+  navigator.clipboard.writeText(json).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = 'copiado!';
+    setTimeout(() => btn.textContent = orig, 1800);
+  }).catch(() => alert('Não foi possível copiar. Verifique as permissões do navegador.'));
+}
+
+function resetData() {
+  if (!confirm('Resetar para os dados originais? Todas as alterações serão perdidas.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  modules = JSON.parse(JSON.stringify(DEFAULT_MODULES));
+  editingModule = null;
+  addingToModule = null;
+  activeFilter = 'all';
+  render();
+}
+
+/* ---- render stats ---- */
+function renderStats() {
+  const all   = allItems();
+  const d     = all.filter(i => i.s === 'done').length;
+  const r     = all.filter(i => i.s === 'rev').length;
+  const t     = all.filter(i => i.s === 'todo').length;
+  const n     = all.filter(i => i.s === 'nd').length;
+  const total = all.length;
+  const pct   = total ? Math.round(d / total * 100) : 0;
+
+  document.getElementById('pct-global').textContent  = pct + '%';
+  document.getElementById('subtitle').textContent    = `${total} itens em ${modules.length} módulos`;
+  document.getElementById('footer').textContent      = `atualizado pelo painel · ${total} itens · ${modules.length} módulos`;
 
   const data = [
-    { f:"done", n:d, label:"Feito",       cls:"c-done" },
-    { f:"rev",  n:r, label:"Revisar",     cls:"c-rev"  },
-    { f:"todo", n:t, label:"Falta fazer", cls:"c-todo" },
-    { f:"nd",   n:n, label:"N/D",         cls:"c-nd"   },
-    { f:"all",  n:total, label:"Total",   cls:"c-pct"  },
+    { f: 'done', n: d,     label: 'Feito',       cls: 'c-done' },
+    { f: 'rev',  n: r,     label: 'Revisar',     cls: 'c-rev'  },
+    { f: 'todo', n: t,     label: 'Falta fazer', cls: 'c-todo' },
+    { f: 'nd',   n: n,     label: 'N/D',         cls: 'c-nd'   },
+    { f: 'all',  n: total, label: 'Total',       cls: 'c-pct'  },
   ];
 
-  document.getElementById("stats").innerHTML = data.map(s => `
-    <div class="stat${activeFilter===s.f?" active":""}" data-f="${s.f}" onclick="setFilter('${s.f}')">
+  document.getElementById('stats').innerHTML = data.map(s => `
+    <div class="stat${activeFilter === s.f ? ' active' : ''}" data-f="${s.f}" onclick="setFilter('${s.f}')">
       <div class="stat-n ${s.cls}">${s.n}</div>
       <div class="stat-l">${s.label}</div>
     </div>
-  `).join("");
+  `).join('');
 }
 
+/* ---- render grid ---- */
 function progClass(items) {
-  if (items.every(i=>i.s==="nd")) return "prog-nd";
-  if (items.some(i=>i.s==="todo")) return "prog-todo";
-  if (items.some(i=>i.s==="rev"))  return "prog-rev";
-  return "prog-done";
+  if (items.every(i => i.s === 'nd')) return 'prog-nd';
+  if (items.some(i => i.s === 'todo')) return 'prog-todo';
+  if (items.some(i => i.s === 'rev'))  return 'prog-rev';
+  return 'prog-done';
 }
 
 function renderGrid() {
-  const filtered = modules
-    .map(m => ({
-      ...m,
-      items: activeFilter === "all" ? m.items : m.items.filter(i => i.s === activeFilter)
-    }))
-    .filter(m => m.items.length > 0);
+  const visibleModules = activeFilter === 'all'
+    ? modules.map((m, mi) => ({ ...m, mi }))
+    : modules.map((m, mi) => ({ ...m, mi, items: m.items.filter(i => i.s === activeFilter) }))
+             .filter(m => m.items.length > 0);
 
-  document.getElementById("grid").innerHTML = filtered.map(m => {
-    const total = m.items.length;
-    const done  = m.items.filter(i=>i.s==="done").length;
-    const pct   = Math.round(done / total * 100);
-    const pc    = progClass(m.items);
+  const cards = visibleModules.map(m => {
+    const mi    = m.mi;
+    const allIt = modules[mi].items; // always use full items for progress
+    const done  = allIt.filter(i => i.s === 'done').length;
+    const total = allIt.length;
+    const pct   = total ? Math.round(done / total * 100) : 0;
+    const pc    = progClass(allIt);
+
+    const nameHtml = editingModule === mi
+      ? `<input id="rename-${mi}" class="card-name-input"
+           value="${esc(m.name)}"
+           onblur="commitRename(${mi})"
+           onkeydown="renameKeydown(event, ${mi})"
+           onclick="event.stopPropagation()">`
+      : `<span class="card-name" title="Clique para renomear" onclick="startRename(${mi})">${esc(m.name)}</span>`;
+
+    const itemsHtml = m.items.map((item, ii) => {
+      // When filtered, find real index in original module
+      const realIdx = activeFilter === 'all' ? ii : modules[mi].items.indexOf(item);
+      return `
+        <div class="item">
+          <button class="item-del" onclick="deleteItem(${mi}, ${realIdx})" title="Remover">×</button>
+          <span class="item-name">${esc(item.n)}</span>
+          <span class="badge ${bcls[item.s]}" onclick="cycleStatus(${mi}, ${realIdx})" title="Clique para mudar status">${label[item.s]}</span>
+        </div>`;
+    }).join('');
+
+    const addFormHtml = addingToModule === mi
+      ? `<div class="add-item-row">
+           <input id="new-item-${mi}" placeholder="Nome do item…" onkeydown="addItemKeydown(event, ${mi})">
+           <button onclick="commitAddItem(${mi})">ok</button>
+           <button class="cancel-btn" onclick="cancelAddItem()">×</button>
+         </div>`
+      : `<div class="add-item-link" onclick="showAddItem(${mi})">+ item</div>`;
 
     return `
       <div class="card">
         <div class="card-head">
-          <span class="card-name">${m.name}</span>
-          <span class="card-count">${done}/${total}</span>
+          ${nameHtml}
+          <div class="card-head-right">
+            <span class="card-count">${done}/${total}</span>
+            <button class="icon-btn" onclick="deleteModule(${mi})" title="Remover módulo">×</button>
+          </div>
         </div>
         <div class="prog-track">
           <div class="prog-fill ${pc}" style="width:${pct}%"></div>
         </div>
-        <div class="card-body">
-          ${m.items.map(i => `
-            <div class="item">
-              <span class="item-name">${i.n}</span>
-              <span class="badge ${bcls[i.s]}">${label[i.s]}</span>
-            </div>
-          `).join("")}
-        </div>
-      </div>
-    `;
-  }).join("");
+        <div class="card-body">${itemsHtml}</div>
+        ${addFormHtml}
+      </div>`;
+  }).join('');
+
+  const addModuleCard = addingToModule === -1
+    ? `<div class="card-add-module">
+         <div class="add-module-row">
+           <input id="new-module-input" placeholder="Nome do módulo…" onkeydown="addModuleKeydown(event)">
+           <button onclick="commitAddModule()">ok</button>
+         </div>
+         <span style="cursor:pointer;color:var(--muted)" onclick="cancelAddModule()">cancelar</span>
+       </div>`
+    : `<div class="card-add-module" onclick="showAddModule()">
+         <span>+ módulo</span>
+       </div>`;
+
+  document.getElementById('grid').innerHTML = cards + addModuleCard;
 }
 
-function setFilter(f) {
-  activeFilter = f;
+function render() {
   renderStats();
   renderGrid();
 }
 
-renderStats();
-renderGrid();
+function setFilter(f) {
+  activeFilter = f;
+  render();
+}
+
+/* ---- init ---- */
+modules = loadModules();
+render();
 </script>
 </body>
 </html>
