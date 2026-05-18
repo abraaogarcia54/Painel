@@ -212,6 +212,23 @@
     transition: border-color .15s;
   }
   .card:hover { border-color: var(--border2); }
+  .card.dragging { opacity: 0.35; border-style: dashed; }
+  .card.drag-over { border-color: var(--done) !important; box-shadow: 0 0 0 1px var(--done); background: var(--done-bg); }
+
+  .drag-handle {
+    cursor: grab;
+    color: var(--muted2);
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity .1s;
+    flex-shrink: 0;
+    user-select: none;
+    padding: 0 2px;
+    display: flex;
+    align-items: center;
+  }
+  .card:hover .drag-handle { opacity: 1; }
+  .drag-handle:active { cursor: grabbing; }
 
   .card-head {
     padding: 10px 14px 8px;
@@ -492,8 +509,6 @@
   </div>
   <div class="actions">
     <span class="saved-tag" id="saved">salvo ✓</span>
-    <button class="btn" onclick="exportData()" title="Copia os dados como JSON">exportar</button>
-    <button class="btn btn-danger" onclick="resetData()" title="Volta aos dados originais">resetar</button>
   </div>
 </div>
 
@@ -832,6 +847,47 @@ function resetData() {
   render();
 }
 
+/* ---- drag to reorder ---- */
+let dragSrcMi = null;
+
+function onDragStart(e, mi) {
+  dragSrcMi = mi;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => {
+    const card = document.querySelector(`[data-mi="${mi}"]`);
+    if (card) card.classList.add('dragging');
+  }, 0);
+}
+
+function onDragEnd() {
+  dragSrcMi = null;
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('dragging', 'drag-over'));
+}
+
+function onDragOver(e, mi) {
+  if (dragSrcMi === null || dragSrcMi === mi) return;
+  e.preventDefault();
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('drag-over'));
+  const card = document.querySelector(`[data-mi="${mi}"]`);
+  if (card) card.classList.add('drag-over');
+}
+
+function onDragLeave(e) {
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    e.currentTarget.classList.remove('drag-over');
+  }
+}
+
+function onDrop(e, mi) {
+  e.preventDefault();
+  if (dragSrcMi === null || dragSrcMi === mi) return;
+  const [moved] = modules.splice(dragSrcMi, 1);
+  modules.splice(mi, 0, moved);
+  dragSrcMi = null;
+  save();
+  render();
+}
+
 /* ---- render stats ---- */
 function renderStats() {
   const all   = allItems();
@@ -911,10 +967,23 @@ function renderGrid() {
          </div>`
       : `<div class="add-item-link" onclick="showAddItem(${mi})">+ item</div>`;
 
+    const dragEnabled = activeFilter === 'all';
+    const dragAttrs = dragEnabled
+      ? `draggable="true" data-mi="${mi}"
+         ondragstart="onDragStart(event,${mi})"
+         ondragend="onDragEnd()"
+         ondragover="onDragOver(event,${mi})"
+         ondragleave="onDragLeave(event)"
+         ondrop="onDrop(event,${mi})"`
+      : '';
+    const dragHandle = dragEnabled
+      ? `<span class="drag-handle" title="Arrastar para reordenar">⠿</span>`
+      : '';
+
     return `
-      <div class="card">
+      <div class="card" ${dragAttrs}>
         <div class="card-head">
-          ${nameHtml}
+          ${dragHandle}${nameHtml}
           <div class="card-head-right">
             <span class="card-count">${done}/${total}</span>
             <button class="icon-btn" onclick="deleteModule(${mi})" title="Remover módulo">×</button>
