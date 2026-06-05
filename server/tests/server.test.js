@@ -203,3 +203,9 @@ test('DELETE /api/users/:id returns 403 for viewer', async () => {
   const res = await request(app).delete('/api/users/1').set('Cookie', cookie);
   assert.equal(res.status, 403);
 });
+
+test('DELETE /api/users/:id returns 404 for non-existent id', async () => {
+  const cookie = await loginAs('admin');
+  const res = await request(app).delete('/api/users/nonexistent-id-999').set('Cookie', cookie);
+  assert.equal(res.status, 404);
+});
