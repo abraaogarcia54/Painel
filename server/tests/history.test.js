@@ -37,9 +37,11 @@ test('appendSnapshot saves a snapshot with correct totals', () => {
 });
 
 test('appendSnapshot does not duplicate snapshot for same date', () => {
+  const before = data.getHistory().length;
   const mods = [{ name: 'Mod A', items: [{ n: 'i1', s: 'done' }] }];
-  data.appendSnapshot(mods);
-  assert.equal(data.getHistory().length, 1);
+  data.appendSnapshot(mods); // first call — may write (today's snapshot from test 2 already exists)
+  data.appendSnapshot(mods); // second explicit call — must not add a new entry
+  assert.equal(data.getHistory().length, before); // length unchanged by these two calls
 });
 
 test('pruneHistory removes entries older than cutoff date', () => {

@@ -144,7 +144,7 @@ function pruneHistory(history, cutoffStr) {
 function appendSnapshot(modules) {
   const today = new Date().toISOString().slice(0, 10);
   const history = getHistory();
-  if (history.length > 0 && history[history.length - 1].date === today) return;
+  if (history.some(s => s.date === today)) return;
 
   const allItems = modules.flatMap(m => m.items);
   const total = allItems.length;
