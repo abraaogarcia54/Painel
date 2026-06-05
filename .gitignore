@@ -4,3 +4,4 @@ node_modules/
 .env
 server/data/users.json
 server/data/modules.json
+*.log
