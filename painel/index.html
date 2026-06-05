@@ -1239,7 +1239,7 @@ function showAppScreen() {
 function renderUserInfo() {
   const el = document.getElementById('user-info');
   if (!el || !currentUser) return;
-  const badgeCls = `badge-${currentUser.role}`;
+  const badgeCls = `badge-${esc(currentUser.role)}`;
   const usersLink = currentUser.role === 'admin'
     ? `<span class="btn" style="cursor:pointer" onclick="showUsersPage()">Usuários</span>`
     : '';
