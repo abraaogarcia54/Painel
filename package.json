@@ -1,0 +1,19 @@
+{
+  "name": "painel",
+  "version": "1.0.0",
+  "description": "Painel de Design - Figma",
+  "scripts": {
+    "start": "node server/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "supertest": "^6.3.4"
+  }
+}

@@ -1,0 +1,6 @@
+.DS_Store
+CLAUDE.md
+node_modules/
+.env
+server/data/users.json
+server/data/modules.json
