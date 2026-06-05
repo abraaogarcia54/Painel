@@ -7,6 +7,7 @@ function getDataDir() {
 
 function usersPath() { return path.join(getDataDir(), 'users.json'); }
 function modulesPath() { return path.join(getDataDir(), 'modules.json'); }
+function historyPath() { return path.join(getDataDir(), 'history.json'); }
 
 function readJSON(filePath) {
   if (!fs.existsSync(filePath)) return null;
@@ -132,8 +133,48 @@ function writeModules(modules) {
   writeJSON(modulesPath(), modules);
 }
 
+function getHistory() {
+  return readJSON(historyPath()) || [];
+}
+
+function pruneHistory(history, cutoffStr) {
+  return history.filter(s => s.date >= cutoffStr);
+}
+
+function appendSnapshot(modules) {
+  const today = new Date().toISOString().slice(0, 10);
+  const history = getHistory();
+  if (history.length > 0 && history[history.length - 1].date === today) return;
+
+  const allItems = modules.flatMap(m => m.items);
+  const total = allItems.length;
+  const done  = allItems.filter(i => i.s === 'done').length;
+  const rev   = allItems.filter(i => i.s === 'rev').length;
+  const todo  = allItems.filter(i => i.s === 'todo').length;
+  const nd    = allItems.filter(i => i.s === 'nd').length;
+
+  const snapshot = {
+    date: today,
+    total, done, rev, todo, nd,
+    modules: modules.map(m => ({
+      name: m.name,
+      done: m.items.filter(i => i.s === 'done').length,
+      total: m.items.length
+    }))
+  };
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 90);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+  const pruned = pruneHistory(history, cutoffStr);
+  pruned.push(snapshot);
+  writeJSON(historyPath(), pruned);
+}
+
 module.exports = {
   getUsers, writeUsers, findUserByEmail, findUserById, addUser, removeUser,
   getModules, writeModules,
+  getHistory, appendSnapshot, pruneHistory,
   DEFAULT_MODULES
 };
