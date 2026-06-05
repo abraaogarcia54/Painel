@@ -950,6 +950,17 @@ function renderStats() {
       <div class="stat-l">${s.label}</div>
     </div>
   `).join('');
+
+  const actionsEl = document.querySelector('.actions');
+  if (actionsEl && currentUser) {
+    const exportBtn = currentUser.role !== 'viewer'
+      ? `<button class="btn" onclick="exportData()">Exportar</button>`
+      : '';
+    const resetBtn = currentUser.role === 'admin'
+      ? `<button class="btn btn-danger" onclick="resetData()">Reset</button>`
+      : '';
+    actionsEl.innerHTML = `<span class="saved-tag" id="saved">salvo ✓</span>${exportBtn}${resetBtn}`;
+  }
 }
 
 /* ---- render grid ---- */
@@ -973,33 +984,36 @@ function renderGrid() {
     const total = allIt.length;
     const pct   = total ? Math.round(done / total * 100) : 0;
     const pc    = progClass(allIt);
+    const isViewer = currentUser && currentUser.role === 'viewer';
 
-    const nameHtml = editingModule === mi
+    const nameHtml = (!isViewer && editingModule === mi)
       ? `<input id="rename-${mi}" class="card-name-input"
            value="${esc(m.name)}"
            onblur="commitRename(${mi})"
            onkeydown="renameKeydown(event, ${mi})"
            onclick="event.stopPropagation()">`
-      : `<span class="card-name" title="Clique para renomear" onclick="startRename(${mi})">${esc(m.name)}</span>`;
+      : isViewer
+        ? `<span class="card-name">${esc(m.name)}</span>`
+        : `<span class="card-name" title="Clique para renomear" onclick="startRename(${mi})">${esc(m.name)}</span>`;
 
     const itemsHtml = m.items.map((item, ii) => {
       // When filtered, find real index in original module
       const realIdx = activeFilter === 'all' ? ii : modules[mi].items.indexOf(item);
       return `
         <div class="item">
-          <button class="item-del" onclick="deleteItem(${mi}, ${realIdx})" title="Remover">×</button>
+          ${!isViewer ? `<button class="item-del" onclick="deleteItem(${mi}, ${realIdx})" title="Remover">×</button>` : ''}
           <span class="item-name">${esc(item.n)}</span>
           <span class="badge ${bcls[item.s]}" onclick="cycleStatus(${mi}, ${realIdx})" title="Clique para mudar status">${label[item.s]}</span>
         </div>`;
     }).join('');
 
-    const addFormHtml = addingToModule === mi
+    const addFormHtml = isViewer ? '' : (addingToModule === mi
       ? `<div class="add-item-row">
            <input id="new-item-${mi}" placeholder="Nome do item…" onkeydown="addItemKeydown(event, ${mi})">
            <button onclick="commitAddItem(${mi})">ok</button>
            <button class="cancel-btn" onclick="cancelAddItem()">×</button>
          </div>`
-      : `<div class="add-item-link" onclick="showAddItem(${mi})">+ item</div>`;
+      : `<div class="add-item-link" onclick="showAddItem(${mi})">+ item</div>`);
 
     const dragEnabled = activeFilter === 'all';
     const dragAttrs = dragEnabled
@@ -1020,7 +1034,7 @@ function renderGrid() {
           ${dragHandle}${nameHtml}
           <div class="card-head-right">
             <span class="card-count">${done}/${total}</span>
-            <button class="icon-btn" onclick="deleteModule(${mi})" title="Remover módulo">×</button>
+            ${!isViewer ? `<button class="icon-btn" onclick="deleteModule(${mi})" title="Remover módulo">×</button>` : ''}
           </div>
         </div>
         <div class="prog-track">
@@ -1031,7 +1045,8 @@ function renderGrid() {
       </div>`;
   }).join('');
 
-  const addModuleCard = addingToModule === -1
+  const isViewerGlobal = currentUser && currentUser.role === 'viewer';
+  const addModuleCard = isViewerGlobal ? '' : (addingToModule === -1
     ? `<div class="card-add-module">
          <div class="add-module-row">
            <input id="new-module-input" placeholder="Nome do módulo…" onkeydown="addModuleKeydown(event)">
@@ -1041,7 +1056,7 @@ function renderGrid() {
        </div>`
     : `<div class="card-add-module" onclick="showAddModule()">
          <span>+ módulo</span>
-       </div>`;
+       </div>`);
 
   document.getElementById('grid').innerHTML = cards + addModuleCard;
 }
@@ -1127,6 +1142,112 @@ document.getElementById('login-form').addEventListener('submit', async function 
     errEl.textContent = 'Erro de conexão. Tente novamente.';
   }
 });
+
+/* ---- admin users page ---- */
+function showUsersPage() {
+  document.getElementById('users-page').style.display = 'block';
+  document.getElementById('main-content').style.display = 'none';
+  renderUsersPage();
+}
+
+function showMainPage() {
+  document.getElementById('users-page').style.display = 'none';
+  document.getElementById('main-content').style.display = 'block';
+}
+
+async function renderUsersPage() {
+  const container = document.getElementById('users-page');
+  container.innerHTML = '<p style="font-family:var(--mono);color:var(--muted);padding:16px">carregando...</p>';
+
+  let users;
+  try {
+    const res = await fetch('/api/users');
+    if (!res.ok) throw new Error();
+    users = await res.json();
+  } catch {
+    container.innerHTML = '<p style="color:var(--todo-txt);font-family:var(--mono);padding:16px">Erro ao carregar usuários.</p>';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="users-page-header">
+      <h2>Gestão de Usuários</h2>
+      <button class="btn" onclick="showMainPage()">← Voltar</button>
+    </div>
+    <table class="users-table">
+      <thead><tr><th>Nome</th><th>Email</th><th>Role</th><th></th></tr></thead>
+      <tbody>
+        ${users.map(u => `
+          <tr>
+            <td>${esc(u.name)}</td>
+            <td>${esc(u.email)}</td>
+            <td><span class="user-badge badge-${esc(u.role)}">${esc(u.role)}</span></td>
+            <td>${u.id !== currentUser.id
+              ? `<button class="btn btn-danger" onclick="deleteUserById('${esc(u.id)}')">×</button>`
+              : '<span style="color:var(--muted);font-size:10px;font-family:var(--mono)">(você)</span>'
+            }</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="add-user-form">
+      <input id="nu-name"     type="text"     placeholder="Nome">
+      <input id="nu-email"    type="email"    placeholder="Email">
+      <input id="nu-password" type="password" placeholder="Senha">
+      <select id="nu-role">
+        <option value="viewer">Viewer</option>
+        <option value="editor">Editor</option>
+        <option value="admin">Admin</option>
+      </select>
+      <button class="btn" onclick="createUser()">+ Usuário</button>
+    </div>
+    <p class="users-msg" id="users-msg"></p>
+  `;
+}
+
+async function createUser() {
+  const name     = document.getElementById('nu-name').value.trim();
+  const email    = document.getElementById('nu-email').value.trim();
+  const password = document.getElementById('nu-password').value;
+  const role     = document.getElementById('nu-role').value;
+  const msgEl    = document.getElementById('users-msg');
+  msgEl.textContent = '';
+  msgEl.className = 'users-msg';
+
+  if (!name || !email || !password) {
+    msgEl.textContent = 'Preencha nome, email e senha.';
+    msgEl.className = 'users-msg err';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, role })
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      msgEl.textContent = body.error || 'Erro ao criar usuário.';
+      msgEl.className = 'users-msg err';
+      return;
+    }
+    renderUsersPage();
+  } catch {
+    msgEl.textContent = 'Erro de conexão.';
+    msgEl.className = 'users-msg err';
+  }
+}
+
+async function deleteUserById(id) {
+  if (!confirm('Remover este usuário?')) return;
+  try {
+    const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+    if (!res.ok) { alert('Erro ao remover usuário.'); return; }
+    renderUsersPage();
+  } catch {
+    alert('Erro de conexão.');
+  }
+}
 
 /* ---- init ---- */
 async function init() {

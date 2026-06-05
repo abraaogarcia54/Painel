@@ -46,7 +46,7 @@ app.post('/auth/login', async (req, res) => {
 app.get('/auth/me', requireAuth, (req, res) => {
   const user = data.findUserById(req.user.userId);
   if (!user) return res.status(401).json({ error: 'Usuário não encontrado' });
-  res.json({ name: user.name, role: user.role });
+  res.json({ id: user.id, name: user.name, role: user.role });
 });
 
 app.post('/auth/logout', (req, res) => {
