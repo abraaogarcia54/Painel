@@ -1035,7 +1035,7 @@ function buildSparklines() {
   const n = recent.length;
   return modules.map(mod => {
     const snapPcts = recent.map(snap => {
-      const m = snap.modules.find(sm => sm.name === mod.name);
+      const m = snap.modules?.find(sm => sm.name === mod.name);
       return m && m.total > 0 ? (m.done / m.total) * 100 : 0;
     });
     const points = snapPcts.map((pct, i) => {
@@ -1279,7 +1279,7 @@ document.getElementById('login-form').addEventListener('submit', async function 
     currentUser = await res.json();
     [modules, history] = await Promise.all([
       loadModules(),
-      fetch('/api/history').then(r => r.json()).catch(() => [])
+      fetch('/api/history').then(r => r.ok ? r.json() : []).catch(() => [])
     ]);
     renderUserInfo();
     showAppScreen();
@@ -1405,7 +1405,7 @@ async function init() {
   try {
     [modules, history] = await Promise.all([
       loadModules(),
-      fetch('/api/history').then(r => r.json()).catch(() => [])
+      fetch('/api/history').then(r => r.ok ? r.json() : []).catch(() => [])
     ]);
   } catch {
     showLoginScreen();
