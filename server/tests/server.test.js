@@ -79,3 +79,64 @@ test('POST /auth/logout clears cookie', async () => {
   const setCookie = res.headers['set-cookie'] || [];
   assert.ok(setCookie.some(c => c.includes('token=;') || c.includes('Max-Age=0') || c.includes('Expires=')), 'cookie should be cleared');
 });
+
+// --- Modules route tests ---
+
+test('GET /api/modules returns array for any authenticated user', async () => {
+  const cookie = await loginAs('viewer');
+  const res = await request(app).get('/api/modules').set('Cookie', cookie);
+  assert.equal(res.status, 200);
+  assert.ok(Array.isArray(res.body));
+  assert.ok(res.body.length > 0);
+});
+
+test('GET /api/modules returns 401 without authentication', async () => {
+  const res = await request(app).get('/api/modules');
+  assert.equal(res.status, 401);
+});
+
+test('PUT /api/modules is forbidden for viewer', async () => {
+  const cookie = await loginAs('viewer');
+  const res = await request(app)
+    .put('/api/modules')
+    .set('Cookie', cookie)
+    .send([{ name: 'X', items: [] }]);
+  assert.equal(res.status, 403);
+});
+
+test('PUT /api/modules succeeds for editor', async () => {
+  const cookie = await loginAs('editor');
+  const newModules = [{ name: 'Editado', items: [{ n: 'i', s: 'done' }] }];
+  const res = await request(app)
+    .put('/api/modules')
+    .set('Cookie', cookie)
+    .send(newModules);
+  assert.equal(res.status, 200);
+  assert.equal(res.body[0].name, 'Editado');
+});
+
+test('PUT /api/modules rejects non-array body', async () => {
+  const cookie = await loginAs('admin');
+  const res = await request(app)
+    .put('/api/modules')
+    .set('Cookie', cookie)
+    .send({ notAnArray: true });
+  assert.equal(res.status, 400);
+});
+
+test('POST /api/modules/reset restores DEFAULT_MODULES for admin', async () => {
+  const cookie = await loginAs('admin');
+  const res = await request(app)
+    .post('/api/modules/reset')
+    .set('Cookie', cookie);
+  assert.equal(res.status, 200);
+  assert.ok(res.body.length > 5);
+});
+
+test('POST /api/modules/reset is forbidden for editor', async () => {
+  const cookie = await loginAs('editor');
+  const res = await request(app)
+    .post('/api/modules/reset')
+    .set('Cookie', cookie);
+  assert.equal(res.status, 403);
+});

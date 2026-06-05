@@ -58,6 +58,23 @@ app.post('/auth/logout', (req, res) => {
   res.json({ ok: true });
 });
 
+// ---- Modules routes ----
+
+app.get('/api/modules', requireAuth, (req, res) => {
+  res.json(data.getModules());
+});
+
+app.put('/api/modules', requireAuth, requireRole('admin', 'editor'), (req, res) => {
+  if (!Array.isArray(req.body)) return res.status(400).json({ error: 'Body deve ser um array' });
+  data.writeModules(req.body);
+  res.json(req.body);
+});
+
+app.post('/api/modules/reset', requireAuth, requireRole('admin'), (req, res) => {
+  data.writeModules(data.DEFAULT_MODULES);
+  res.json(data.DEFAULT_MODULES);
+});
+
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
