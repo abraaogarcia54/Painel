@@ -10,7 +10,11 @@ function modulesPath() { return path.join(getDataDir(), 'modules.json'); }
 
 function readJSON(filePath) {
   if (!fs.existsSync(filePath)) return null;
-  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return null;
+  }
 }
 
 function writeJSON(filePath, data) {

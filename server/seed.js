@@ -1,5 +1,6 @@
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
+const { randomUUID } = require('crypto');
 const path = require('path');
 const fs = require('fs');
 const data = require('./data.js');
@@ -35,7 +36,7 @@ if (data.findUserByEmail(email)) {
 
 (async () => {
   const passwordHash = await bcrypt.hash(password, 12);
-  const id = Date.now().toString();
+  const id = randomUUID();
   data.addUser({ id, name, email, passwordHash, role });
   console.log(`✓ Usuário criado: ${name} <${email}> [${role}]`);
 })();
