@@ -415,6 +415,86 @@
   }
   .add-item-link:hover { color: var(--done-txt); background: var(--bg3); }
 
+  /* ---- dashboard ---- */
+.dashboard {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+
+.dash-donut {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.dash-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.dash-legend span { display: flex; align-items: center; gap: 6px; }
+
+.dash-sparklines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  justify-content: center;
+}
+
+.spark-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.spark-name {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  width: 150px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spark-svg {
+  flex: 1;
+  height: 20px;
+  min-width: 60px;
+}
+
+.spark-delta {
+  font-family: var(--mono);
+  font-size: 10px;
+  width: 48px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.dash-no-history {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted2);
+  font-style: italic;
+}
+
   /* ---- add module card ---- */
   .card-add-module {
     background: none;
@@ -709,6 +789,7 @@ const label = { done: "Feito", rev: "Revisar", todo: "Falta fazer", nd: "Não de
 const bcls  = { done: "b-done", rev: "b-rev", todo: "b-todo", nd: "b-nd" };
 
 let modules = [];
+let history = [];
 let activeFilter   = "all";
 let editingModule  = null; // index being renamed
 let addingToModule = null; // index getting new item, or -1 for new module
@@ -923,8 +1004,82 @@ function onDrop(e, mi) {
   render();
 }
 
-/* ---- render stats ---- */
-function renderStats() {
+/* ---- render dashboard ---- */
+function buildDonutSVG(d, r, t, total) {
+  if (total === 0) {
+    return '<svg width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--bg3)" stroke-width="14"/><text x="50" y="50" text-anchor="middle" dominant-baseline="middle" font-family="var(--mono)" font-size="10" fill="var(--muted)">sem itens</text></svg>';
+  }
+  const C = 251.3;
+  let offset = 0;
+  function seg(len, color) {
+    if (len <= 0) return '';
+    const s = `<circle cx="50" cy="50" r="40" fill="none" stroke="${color}" stroke-width="14" stroke-dasharray="${len.toFixed(1)} ${C}" stroke-dashoffset="${(-offset).toFixed(1)}" transform="rotate(-90 50 50)"/>`;
+    offset += len;
+    return s;
+  }
+  const dLen = (d / total) * C;
+  const rLen = (r / total) * C;
+  const tLen = (t / total) * C;
+  const pct  = Math.round(d / total * 100);
+  return `<svg width="100" height="100" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="40" fill="none" stroke="var(--bg3)" stroke-width="14"/>
+    ${seg(dLen, 'var(--done)')}${seg(rLen, 'var(--rev)')}${seg(tLen, 'var(--todo)')}
+    <text x="50" y="46" text-anchor="middle" font-family="var(--mono)" font-size="14" font-weight="500" fill="var(--done-txt)">${pct}%</text>
+    <text x="50" y="58" text-anchor="middle" font-family="var(--mono)" font-size="8" fill="var(--muted)">feito</text>
+  </svg>`;
+}
+
+function buildSparklines() {
+  if (history.length < 2) return '';
+  const recent = history.slice(-7);
+  const n = recent.length;
+  return modules.map(mod => {
+    const snapPcts = recent.map(snap => {
+      const m = snap.modules.find(sm => sm.name === mod.name);
+      return m && m.total > 0 ? (m.done / m.total) * 100 : 0;
+    });
+    const points = snapPcts.map((pct, i) => {
+      const x = n > 1 ? (i / (n - 1)) * 80 : 40;
+      const y = 18 - (pct / 100) * 16;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+    const delta = Math.round(snapPcts[snapPcts.length - 1] - snapPcts[0]);
+    const deltaColor = delta > 0 ? 'var(--done-txt)' : delta < 0 ? 'var(--todo-txt)' : 'var(--muted)';
+    const deltaStr   = delta > 0 ? `↑+${delta}%` : delta < 0 ? `↓${delta}%` : '→ 0%';
+    return `<div class="spark-row">
+      <span class="spark-name">${esc(mod.name)}</span>
+      <svg class="spark-svg" viewBox="0 0 80 20" preserveAspectRatio="none">
+        <polyline points="${points}" fill="none" stroke="var(--done)" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>
+      <span class="spark-delta" style="color:${deltaColor}">${deltaStr}</span>
+    </div>`;
+  }).join('');
+}
+
+function buildDashboardHTML(d, r, t, n, total) {
+  const donutSVG = buildDonutSVG(d, r, t, total);
+  const pctDone  = total ? Math.round(d / total * 100) : 0;
+  const pctRev   = total ? Math.round(r / total * 100) : 0;
+  const pctTodo  = total ? Math.round(t / total * 100) : 0;
+  const sparklines = buildSparklines();
+  const sparklinesSection = sparklines
+    ? `<div class="dash-sparklines">${sparklines}</div>`
+    : `<div class="dash-sparklines"><span class="dash-no-history">histórico disponível após o primeiro snapshot automático (meia-noite)</span></div>`;
+  return `<div class="dashboard">
+    <div class="dash-donut">
+      ${donutSVG}
+      <div class="dash-legend">
+        <span><span class="dot d-done"></span>Feito ${pctDone}% (${d})</span>
+        <span><span class="dot d-rev"></span>Revisar ${pctRev}% (${r})</span>
+        <span><span class="dot d-todo"></span>Falta ${pctTodo}% (${t})</span>
+        <span><span class="dot d-nd"></span>N/D ${n}</span>
+      </div>
+    </div>
+    ${sparklinesSection}
+  </div>`;
+}
+
+function renderDashboard() {
   const all   = allItems();
   const d     = all.filter(i => i.s === 'done').length;
   const r     = all.filter(i => i.s === 'rev').length;
@@ -933,24 +1088,9 @@ function renderStats() {
   const total = all.length;
   const pct   = total ? Math.round(d / total * 100) : 0;
 
-  document.getElementById('pct-global').textContent  = pct + '%';
-  document.getElementById('subtitle').textContent    = `${total} itens em ${modules.length} módulos`;
-  document.getElementById('footer').textContent      = `atualizado pelo painel · ${total} itens · ${modules.length} módulos`;
-
-  const data = [
-    { f: 'done', n: d,     label: 'Feito',       cls: 'c-done' },
-    { f: 'rev',  n: r,     label: 'Revisar',     cls: 'c-rev'  },
-    { f: 'todo', n: t,     label: 'Falta fazer', cls: 'c-todo' },
-    { f: 'nd',   n: n,     label: 'N/D',         cls: 'c-nd'   },
-    { f: 'all',  n: total, label: 'Total',       cls: 'c-pct'  },
-  ];
-
-  document.getElementById('stats').innerHTML = data.map(s => `
-    <div class="stat${activeFilter === s.f ? ' active' : ''}" data-f="${s.f}" onclick="setFilter('${s.f}')">
-      <div class="stat-n ${s.cls}">${s.n}</div>
-      <div class="stat-l">${s.label}</div>
-    </div>
-  `).join('');
+  document.getElementById('pct-global').textContent = pct + '%';
+  document.getElementById('subtitle').textContent   = `${total} itens em ${modules.length} módulos`;
+  document.getElementById('footer').textContent     = `atualizado pelo painel · ${total} itens · ${modules.length} módulos`;
 
   const btnEl = document.getElementById('action-buttons');
   if (btnEl && currentUser) {
@@ -962,6 +1102,8 @@ function renderStats() {
       : '';
     btnEl.innerHTML = exportBtn + resetBtn;
   }
+
+  document.getElementById('stats').innerHTML = buildDashboardHTML(d, r, t, n, total);
 }
 
 /* ---- render grid ---- */
@@ -1063,7 +1205,7 @@ function renderGrid() {
 }
 
 function render() {
-  renderStats();
+  renderDashboard();
   renderGrid();
 }
 
@@ -1135,7 +1277,10 @@ document.getElementById('login-form').addEventListener('submit', async function 
       return;
     }
     currentUser = await res.json();
-    modules = await loadModules();
+    [modules, history] = await Promise.all([
+      loadModules(),
+      fetch('/api/history').then(r => r.json()).catch(() => [])
+    ]);
     renderUserInfo();
     showAppScreen();
     render();
@@ -1258,7 +1403,10 @@ async function init() {
     return;
   }
   try {
-    modules = await loadModules();
+    [modules, history] = await Promise.all([
+      loadModules(),
+      fetch('/api/history').then(r => r.json()).catch(() => [])
+    ]);
   } catch {
     showLoginScreen();
     return;
