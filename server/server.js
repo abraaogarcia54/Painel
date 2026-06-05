@@ -75,6 +75,41 @@ app.post('/api/modules/reset', requireAuth, requireRole('admin'), (req, res) => 
   res.json(data.DEFAULT_MODULES);
 });
 
+// ---- Users routes ----
+
+const VALID_ROLES = ['admin', 'editor', 'viewer'];
+
+app.get('/api/users', requireAuth, requireRole('admin'), (req, res) => {
+  const users = data.getUsers().map(({ passwordHash: _, ...u }) => u);
+  res.json(users);
+});
+
+app.post('/api/users', requireAuth, requireRole('admin'), async (req, res) => {
+  const { name, email, password, role } = req.body || {};
+  if (!name || !email || !password || !role) {
+    return res.status(400).json({ error: 'name, email, password e role são obrigatórios' });
+  }
+  if (!VALID_ROLES.includes(role)) {
+    return res.status(400).json({ error: `role deve ser um de: ${VALID_ROLES.join(', ')}` });
+  }
+  if (data.findUserByEmail(email)) {
+    return res.status(409).json({ error: 'Email já cadastrado' });
+  }
+  const passwordHash = await bcrypt.hash(password, 12);
+  const id = Date.now().toString();
+  const newUser = { id, name, email, passwordHash, role };
+  data.addUser(newUser);
+  const { passwordHash: _, ...safe } = newUser;
+  res.status(201).json(safe);
+});
+
+app.delete('/api/users/:id', requireAuth, requireRole('admin'), (req, res) => {
+  const user = data.findUserById(req.params.id);
+  if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+  data.removeUser(req.params.id);
+  res.json({ ok: true });
+});
+
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));

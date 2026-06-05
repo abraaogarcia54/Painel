@@ -140,3 +140,66 @@ test('POST /api/modules/reset is forbidden for editor', async () => {
     .set('Cookie', cookie);
   assert.equal(res.status, 403);
 });
+
+// --- Users route tests ---
+
+test('GET /api/users returns 403 for editor', async () => {
+  const cookie = await loginAs('editor');
+  const res = await request(app).get('/api/users').set('Cookie', cookie);
+  assert.equal(res.status, 403);
+});
+
+test('GET /api/users returns user list for admin without passwordHash', async () => {
+  const cookie = await loginAs('admin');
+  const res = await request(app).get('/api/users').set('Cookie', cookie);
+  assert.equal(res.status, 200);
+  assert.ok(Array.isArray(res.body));
+  assert.ok(res.body.length >= 3);
+  assert.ok(!res.body[0].passwordHash, 'must not expose password hash');
+});
+
+test('POST /api/users creates a new user for admin', async () => {
+  const cookie = await loginAs('admin');
+  const res = await request(app)
+    .post('/api/users')
+    .set('Cookie', cookie)
+    .send({ name: 'Novo', email: 'novo@t.com', password: 'senha456', role: 'viewer' });
+  assert.equal(res.status, 201);
+  assert.equal(res.body.email, 'novo@t.com');
+  assert.ok(!res.body.passwordHash, 'must not expose password hash');
+});
+
+test('POST /api/users returns 409 on duplicate email', async () => {
+  const cookie = await loginAs('admin');
+  const res = await request(app)
+    .post('/api/users')
+    .set('Cookie', cookie)
+    .send({ name: 'Dup', email: 'admin@t.com', password: 'senha456', role: 'viewer' });
+  assert.equal(res.status, 409);
+});
+
+test('POST /api/users returns 400 on invalid role', async () => {
+  const cookie = await loginAs('admin');
+  const res = await request(app)
+    .post('/api/users')
+    .set('Cookie', cookie)
+    .send({ name: 'X', email: 'x@t.com', password: 'senha456', role: 'superuser' });
+  assert.equal(res.status, 400);
+});
+
+test('DELETE /api/users/:id removes user for admin', async () => {
+  const cookie = await loginAs('admin');
+  const listRes = await request(app).get('/api/users').set('Cookie', cookie);
+  const toDelete = listRes.body.find(u => u.email === 'novo@t.com');
+  assert.ok(toDelete, 'user novo@t.com should exist');
+  const res = await request(app)
+    .delete(`/api/users/${toDelete.id}`)
+    .set('Cookie', cookie);
+  assert.equal(res.status, 200);
+});
+
+test('DELETE /api/users/:id returns 403 for viewer', async () => {
+  const cookie = await loginAs('viewer');
+  const res = await request(app).delete('/api/users/1').set('Cookie', cookie);
+  assert.equal(res.status, 403);
+});
