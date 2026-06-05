@@ -480,20 +480,206 @@
     color: var(--muted2);
     text-align: center;
   }
+
+  /* ---- login screen ---- */
+  .login-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .login-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 36px 32px 32px;
+    width: 100%;
+    max-width: 360px;
+  }
+  .login-title {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+  .login-sub {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-bottom: 24px;
+  }
+  .login-field {
+    margin-bottom: 14px;
+  }
+  .login-field label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .login-field input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 8px 11px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .login-field input:focus { border-color: var(--done); }
+  .login-error {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--todo-txt);
+    min-height: 16px;
+    margin-bottom: 12px;
+  }
+  .login-btn {
+    width: 100%;
+    padding: 9px;
+    font-size: 11px;
+    background: var(--bg3);
+    border-color: var(--done);
+    color: var(--done-txt);
+  }
+  .login-btn:hover { background: var(--done-bg); }
+
+  /* ---- user info in header ---- */
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .user-badge {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    border: 1px solid var(--border2);
+  }
+  .badge-admin  { color: var(--done-txt);  border-color: var(--done);  background: var(--done-bg); }
+  .badge-editor { color: var(--rev-txt);   border-color: var(--rev);   background: var(--rev-bg);  }
+  .badge-viewer { color: var(--nd-txt);    border-color: var(--nd);    background: var(--nd-bg);   }
+
+  /* ---- admin users page ---- */
+  .users-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .users-page-header h2 {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .users-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .users-table th {
+    text-align: left;
+    padding: 8px 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    font-size: 9px;
+    border-bottom: 1px solid var(--border);
+  }
+  .users-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  .add-user-form {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    padding: 16px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 12px;
+  }
+  .add-user-form input, .add-user-form select {
+    flex: 1;
+    min-width: 120px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    outline: none;
+  }
+  .add-user-form input:focus, .add-user-form select:focus { border-color: var(--done); }
+  .users-msg {
+    font-family: var(--mono);
+    font-size: 10px;
+    min-height: 16px;
+  }
+  .users-msg.err  { color: var(--todo-txt); }
+  .users-msg.ok   { color: var(--done-txt); }
 </style>
 </head>
 <body>
+
+<div id="login-screen" style="display:none">
+  <div class="login-wrap">
+    <div class="login-card">
+      <h1 class="login-title">Painel de Design</h1>
+      <p class="login-sub">faça login para continuar</p>
+      <form id="login-form">
+        <div class="login-field">
+          <label>Email</label>
+          <input type="email" id="login-email" autocomplete="email" required>
+        </div>
+        <div class="login-field">
+          <label>Senha</label>
+          <input type="password" id="login-password" autocomplete="current-password" required>
+        </div>
+        <p class="login-error" id="login-error"></p>
+        <button type="submit" class="btn login-btn">Entrar</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div id="app-screen" style="display:none">
+
+<div id="users-page" style="display:none"></div>
+
+<div id="main-content">
 
 <header>
   <div>
     <h1>Painel de Design - Figma</h1>
     <p id="subtitle">carregando...</p>
   </div>
-  <div class="global-bar">
-    <div>
-      <div class="pct" id="pct-global" style="font-size: 40px;">0%</div>
-      <div style="font-size:10px;margin-top:2px">concluído</div>
+  <div style="display:flex;align-items:center;gap:20px">
+    <div class="global-bar">
+      <div>
+        <div class="pct" id="pct-global" style="font-size: 40px;">0%</div>
+        <div style="font-size:10px;margin-top:2px">concluído</div>
+      </div>
     </div>
+    <div class="user-info" id="user-info"></div>
   </div>
 </header>
 
@@ -1026,5 +1212,7 @@ function setFilter(f) {
 modules = loadModules();
 render();
 </script>
+</div><!-- #main-content -->
+</div><!-- #app-screen -->
 </body>
 </html>
