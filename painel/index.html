@@ -1208,9 +1208,92 @@ function setFilter(f) {
   render();
 }
 
+/* ---- state: current user ---- */
+let currentUser = null;
+
+/* ---- auth helpers ---- */
+async function checkAuth() {
+  try {
+    const res = await fetch('/auth/me');
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+async function logout() {
+  await fetch('/auth/logout', { method: 'POST' });
+  currentUser = null;
+  showLoginScreen();
+}
+
+function showLoginScreen() {
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'block';
+}
+
+function showAppScreen() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+}
+
+function renderUserInfo() {
+  const el = document.getElementById('user-info');
+  if (!el || !currentUser) return;
+  const badgeCls = `badge-${currentUser.role}`;
+  const usersLink = currentUser.role === 'admin'
+    ? `<span class="btn" style="cursor:pointer" onclick="showUsersPage()">Usuários</span>`
+    : '';
+  el.innerHTML = `
+    <span>${esc(currentUser.name)}</span>
+    <span class="user-badge ${badgeCls}">${esc(currentUser.role)}</span>
+    ${usersLink}
+    <button class="btn btn-danger" onclick="logout()">Sair</button>
+  `;
+}
+
+/* ---- login form ---- */
+document.getElementById('login-form').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const email    = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  errEl.textContent = '';
+
+  try {
+    const res = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      errEl.textContent = body.error || 'Credenciais inválidas';
+      return;
+    }
+    currentUser = await res.json();
+    modules = await loadModules();
+    renderUserInfo();
+    showAppScreen();
+    render();
+  } catch {
+    errEl.textContent = 'Erro de conexão. Tente novamente.';
+  }
+});
+
 /* ---- init ---- */
-modules = loadModules();
-render();
+async function init() {
+  currentUser = await checkAuth();
+  if (!currentUser) {
+    showLoginScreen();
+    return;
+  }
+  modules = await loadModules();
+  renderUserInfo();
+  showAppScreen();
+  render();
+}
+
+init();
 </script>
 </div><!-- #main-content -->
 </div><!-- #app-screen -->
