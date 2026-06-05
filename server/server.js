@@ -162,7 +162,11 @@ app.get('/api/history', requireAuth, (req, res) => {
 
 if (process.env.NODE_ENV !== 'test') {
   cron.schedule('0 0 * * *', () => {
-    data.appendSnapshot(data.getModules());
+    try {
+      data.appendSnapshot(data.getModules());
+    } catch (err) {
+      console.error('[cron] appendSnapshot failed:', err);
+    }
   });
 }
 
