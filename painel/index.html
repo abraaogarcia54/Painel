@@ -695,6 +695,7 @@
   </div>
   <div class="actions">
     <span class="saved-tag" id="saved">salvo ✓</span>
+    <span id="action-buttons"></span>
   </div>
 </div>
 
@@ -860,11 +861,11 @@ function addModuleKeydown(e) {
   e.stopPropagation();
 }
 
-function exportData() {
+function exportData(e) {
+  const btn = e.target;
+  const orig = btn.textContent;
   const json = JSON.stringify(modules, null, 2);
   navigator.clipboard.writeText(json).then(() => {
-    const btn = event.target;
-    const orig = btn.textContent;
     btn.textContent = 'copiado!';
     setTimeout(() => btn.textContent = orig, 1800);
   }).catch(() => alert('Não foi possível copiar. Verifique as permissões do navegador.'));
@@ -951,15 +952,15 @@ function renderStats() {
     </div>
   `).join('');
 
-  const actionsEl = document.querySelector('.actions');
-  if (actionsEl && currentUser) {
+  const btnEl = document.getElementById('action-buttons');
+  if (btnEl && currentUser) {
     const exportBtn = currentUser.role !== 'viewer'
-      ? `<button class="btn" onclick="exportData()">Exportar</button>`
+      ? `<button class="btn" onclick="exportData(event)">Exportar</button>`
       : '';
     const resetBtn = currentUser.role === 'admin'
       ? `<button class="btn btn-danger" onclick="resetData()">Reset</button>`
       : '';
-    actionsEl.innerHTML = `<span class="saved-tag" id="saved">salvo ✓</span>${exportBtn}${resetBtn}`;
+    btnEl.innerHTML = exportBtn + resetBtn;
   }
 }
 
@@ -1256,7 +1257,12 @@ async function init() {
     showLoginScreen();
     return;
   }
-  modules = await loadModules();
+  try {
+    modules = await loadModules();
+  } catch {
+    showLoginScreen();
+    return;
+  }
   renderUserInfo();
   showAppScreen();
   render();
