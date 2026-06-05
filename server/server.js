@@ -9,6 +9,7 @@ const { randomUUID } = require('crypto');
 const requireAuth = require('./middleware/auth.js');
 const { requireRole } = requireAuth;
 const data = require('./data.js');
+const cron = require('node-cron');
 
 const app = express();
 
@@ -150,6 +151,20 @@ app.delete('/api/users/:id', requireAuth, requireRole('admin'), (req, res) => {
   data.removeUser(req.params.id);
   res.json({ ok: true });
 });
+
+// ---- History route ----
+
+app.get('/api/history', requireAuth, (req, res) => {
+  res.json(data.getHistory());
+});
+
+// ---- Daily snapshot cron ----
+
+if (process.env.NODE_ENV !== 'test') {
+  cron.schedule('0 0 * * *', () => {
+    data.appendSnapshot(data.getModules());
+  });
+}
 
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;

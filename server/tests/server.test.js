@@ -211,3 +211,26 @@ test('DELETE /api/users/:id returns 404 for non-existent id', async () => {
   const res = await request(app).delete('/api/users/nonexistent-id-999').set('Cookie', cookie);
   assert.equal(res.status, 404);
 });
+
+// --- History route tests ---
+
+test('GET /api/history returns 401 without auth', async () => {
+  const res = await request(app).get('/api/history');
+  assert.equal(res.status, 401);
+});
+
+test('GET /api/history returns [] when no history exists', async () => {
+  const cookie = await loginAs('viewer');
+  const res = await request(app).get('/api/history').set('Cookie', cookie);
+  assert.equal(res.status, 200);
+  assert.deepStrictEqual(res.body, []);
+});
+
+test('GET /api/history is accessible by all roles', async () => {
+  for (const role of ['admin', 'editor', 'viewer']) {
+    const cookie = await loginAs(role);
+    const res = await request(app).get('/api/history').set('Cookie', cookie);
+    assert.equal(res.status, 200, `role ${role} should be able to access /api/history`);
+    assert.ok(Array.isArray(res.body));
+  }
+});
