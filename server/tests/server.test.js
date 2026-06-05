@@ -41,6 +41,7 @@ test('POST /auth/login returns 200 and sets cookie on valid credentials', async 
   assert.ok(res.headers['set-cookie'], 'cookie should be set');
   assert.equal(res.body.role, 'admin');
   assert.equal(res.body.name, 'Admin');
+  assert.ok(res.body.id, 'should include id');
   assert.ok(!res.body.passwordHash, 'should not expose hash');
 });
 

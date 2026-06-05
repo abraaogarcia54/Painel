@@ -40,7 +40,7 @@ app.post('/auth/login', async (req, res) => {
     maxAge: 8 * 60 * 60 * 1000
   });
 
-  res.json({ name: user.name, role: user.role });
+  res.json({ id: user.id, name: user.name, role: user.role });
 });
 
 app.get('/auth/me', requireAuth, (req, res) => {
