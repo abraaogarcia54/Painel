@@ -64,6 +64,7 @@ test('GET /auth/me returns user info with valid cookie', async () => {
   assert.equal(res.status, 200);
   assert.equal(res.body.role, 'editor');
   assert.equal(res.body.name, 'Editor');
+  assert.ok(!res.body.passwordHash, 'should not expose hash');
 });
 
 test('GET /auth/me returns 401 without cookie', async () => {

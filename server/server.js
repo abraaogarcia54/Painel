@@ -50,7 +50,11 @@ app.get('/auth/me', requireAuth, (req, res) => {
 });
 
 app.post('/auth/logout', (req, res) => {
-  res.clearCookie('token', { httpOnly: true, sameSite: 'Strict' });
+  res.clearCookie('token', {
+    httpOnly: true,
+    sameSite: 'Strict',
+    secure: process.env.NODE_ENV === 'production'
+  });
   res.json({ ok: true });
 });
 
