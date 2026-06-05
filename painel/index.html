@@ -1003,7 +1003,7 @@ function renderGrid() {
         <div class="item">
           ${!isViewer ? `<button class="item-del" onclick="deleteItem(${mi}, ${realIdx})" title="Remover">×</button>` : ''}
           <span class="item-name">${esc(item.n)}</span>
-          <span class="badge ${bcls[item.s]}" onclick="cycleStatus(${mi}, ${realIdx})" title="Clique para mudar status">${label[item.s]}</span>
+          <span class="badge ${bcls[item.s]}" ${!isViewer ? `onclick="cycleStatus(${mi}, ${realIdx})"` : ''} title="${!isViewer ? 'Clique para mudar status' : label[item.s]}">${label[item.s]}</span>
         </div>`;
     }).join('');
 
