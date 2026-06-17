@@ -336,92 +336,12 @@ async function onDrop(e, mi) {
 }
 
 /* ---- render dashboard ---- */
-function buildDonutSVG(d, r, t, total) {
-  if (total === 0) {
-    return '<svg width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--bg3)" stroke-width="14"/><text x="50" y="50" text-anchor="middle" dominant-baseline="middle" font-family="var(--mono)" font-size="10" fill="var(--muted)">sem itens</text></svg>';
-  }
-  const C = 251.3;
-  let offset = 0;
-  function seg(len, color) {
-    if (len <= 0) return '';
-    const s = `<circle cx="50" cy="50" r="40" fill="none" stroke="${color}" stroke-width="14" stroke-dasharray="${len.toFixed(1)} ${C}" stroke-dashoffset="${(-offset).toFixed(1)}" transform="rotate(-90 50 50)"/>`;
-    offset += len;
-    return s;
-  }
-  const dLen = (d / total) * C;
-  const rLen = (r / total) * C;
-  const tLen = (t / total) * C;
-  const pct  = Math.round(d / total * 100);
-  return `<svg width="100" height="100" viewBox="0 0 100 100">
-    <circle cx="50" cy="50" r="40" fill="none" stroke="var(--bg3)" stroke-width="14"/>
-    ${seg(dLen, 'var(--done)')}${seg(rLen, 'var(--rev)')}${seg(tLen, 'var(--todo)')}
-    <text x="50" y="46" text-anchor="middle" font-family="var(--mono)" font-size="14" font-weight="500" fill="var(--done-txt)">${pct}%</text>
-    <text x="50" y="58" text-anchor="middle" font-family="var(--mono)" font-size="8" fill="var(--muted)">feito</text>
-  </svg>`;
-}
-
-function buildSparklines() {
-  if (history.length < 2) return '';
-  const recent = history.slice(-7);
-  const n = recent.length;
-  return modules.map(mod => {
-    const snapPcts = recent.map(snap => {
-      const m = snap.modules?.find(sm => sm.name === mod.name);
-      return m && m.total > 0 ? (m.done / m.total) * 100 : 0;
-    });
-    const points = snapPcts.map((pct, i) => {
-      const x = n > 1 ? (i / (n - 1)) * 80 : 40;
-      const y = 18 - (pct / 100) * 16;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(' ');
-    const delta = Math.round(snapPcts[snapPcts.length - 1] - snapPcts[0]);
-    const deltaColor = delta > 0 ? 'var(--done-txt)' : delta < 0 ? 'var(--todo-txt)' : 'var(--muted)';
-    const deltaStr   = delta > 0 ? `↑+${delta}%` : delta < 0 ? `↓${Math.abs(delta)}%` : '→ 0%';
-    return `<div class="spark-row">
-      <span class="spark-name">${esc(mod.name)}</span>
-      <svg class="spark-svg" viewBox="0 0 80 20" preserveAspectRatio="none">
-        <polyline points="${points}" fill="none" stroke="var(--done)" stroke-width="1.5" stroke-linejoin="round"/>
-      </svg>
-      <span class="spark-delta" style="color:${deltaColor}">${deltaStr}</span>
-    </div>`;
-  }).join('');
-}
-
-function buildDashboardHTML(d, r, t, n, total) {
-  const donutSVG = buildDonutSVG(d, r, t, total);
-  const pctDone  = total ? Math.round(d / total * 100) : 0;
-  const pctRev   = total ? Math.round(r / total * 100) : 0;
-  const pctTodo  = total ? Math.round(t / total * 100) : 0;
-  const sparklines = buildSparklines();
-  const sparklinesSection = sparklines
-    ? `<div class="dash-sparklines">${sparklines}</div>`
-    : `<div class="dash-sparklines"><span class="dash-no-history">histórico disponível após o primeiro snapshot automático (meia-noite)</span></div>`;
-  return `<div class="dashboard">
-    <div class="dash-donut">
-      ${donutSVG}
-      <div class="dash-legend">
-        <span><span class="dot d-done"></span>Feito ${pctDone}% (${d})</span>
-        <span><span class="dot d-rev"></span>Revisar ${pctRev}% (${r})</span>
-        <span><span class="dot d-todo"></span>Falta ${pctTodo}% (${t})</span>
-        <span><span class="dot d-nd"></span>N/D ${n}</span>
-      </div>
-    </div>
-    ${sparklinesSection}
-  </div>`;
-}
-
 function renderDashboard() {
   const all   = allItems();
-  const d     = all.filter(i => i.s === 'done').length;
-  const r     = all.filter(i => i.s === 'rev').length;
-  const t     = all.filter(i => i.s === 'todo').length;
-  const n     = all.filter(i => i.s === 'nd').length;
   const total = all.length;
-  const pct   = total ? Math.round(d / total * 100) : 0;
 
-  document.getElementById('pct-global').textContent = pct + '%';
-  document.getElementById('subtitle').textContent   = `${total} itens em ${modules.length} módulos`;
-  document.getElementById('footer').textContent     = `atualizado pelo painel · ${total} itens · ${modules.length} módulos`;
+  document.getElementById('subtitle').textContent = `${total} itens em ${modules.length} módulos`;
+  document.getElementById('footer').textContent   = `atualizado pelo painel · ${total} itens · ${modules.length} módulos`;
 
   const btnEl = document.getElementById('action-buttons');
   if (btnEl && currentUser) {
@@ -433,8 +353,6 @@ function renderDashboard() {
       : '';
     btnEl.innerHTML = exportBtn + resetBtn;
   }
-
-  document.getElementById('stats').innerHTML = buildDashboardHTML(d, r, t, n, total);
 }
 
 /* ---- render grid ---- */

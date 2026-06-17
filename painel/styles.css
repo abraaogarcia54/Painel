@@ -62,26 +62,6 @@ header p {
   margin-top: 4px;
 }
 
-.global-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.global-bar .pct {
-  font-size: 22px;
-  font-weight: 500;
-  color: var(--done);
-  line-height: 1;
-}
-
-.stats {
-  margin-bottom: 24px;
-}
-
 .stat {
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -402,85 +382,6 @@ header p {
 }
 .add-item-link:hover { color: var(--done-txt); background: var(--bg3); }
 
-/* ---- dashboard ---- */
-.dashboard {
-display: flex;
-gap: 24px;
-align-items: flex-start;
-background: var(--bg2);
-border: 1px solid var(--border);
-border-radius: 8px;
-padding: 20px 24px;
-}
-
-.dash-donut {
-display: flex;
-flex-direction: column;
-align-items: center;
-gap: 10px;
-flex-shrink: 0;
-}
-
-.dash-legend {
-display: flex;
-flex-direction: column;
-gap: 5px;
-font-family: var(--mono);
-font-size: 10px;
-color: var(--muted);
-}
-
-.dash-legend span { display: flex; align-items: center; gap: 6px; }
-
-.dash-sparklines {
-flex: 1;
-display: flex;
-flex-direction: column;
-gap: 8px;
-min-width: 0;
-min-height: 100px;
-justify-content: center;
-}
-
-.spark-row {
-display: flex;
-align-items: center;
-gap: 10px;
-}
-
-.spark-name {
-font-family: var(--mono);
-font-size: 10px;
-color: var(--muted);
-text-transform: uppercase;
-letter-spacing: .02em;
-width: 150px;
-flex-shrink: 0;
-overflow: hidden;
-text-overflow: ellipsis;
-white-space: nowrap;
-}
-
-.spark-svg {
-flex: 1;
-height: 20px;
-min-width: 60px;
-}
-
-.spark-delta {
-font-family: var(--mono);
-font-size: 10px;
-width: 48px;
-text-align: right;
-flex-shrink: 0;
-}
-
-.dash-no-history {
-font-family: var(--mono);
-font-size: 10px;
-color: var(--muted2);
-font-style: italic;
-}
 
 /* ---- add module card ---- */
 .card-add-module {
