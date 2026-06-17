@@ -48,7 +48,73 @@ function removeUser(id) {
   writeUsers(getUsers().filter(u => u.id !== id));
 }
 
-const DEFAULT_MODULES = [
+function slugify(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function moduleIdFromName(name, index) {
+  const slug = slugify(name) || `module-${index + 1}`;
+  return `mod-${slug}`;
+}
+
+function itemIdFromName(name, index) {
+  const slug = slugify(name) || `item-${index + 1}`;
+  return `item-${slug}`;
+}
+
+function uniqueModuleId(mod, index, used) {
+  const rawId = typeof mod.id === 'string' ? mod.id.trim() : '';
+  const base = rawId || moduleIdFromName(mod.name, index);
+  let id = base;
+  let suffix = 2;
+
+  while (used.has(id)) {
+    id = `${base}-${suffix}`;
+    suffix++;
+  }
+
+  used.add(id);
+  return id;
+}
+
+function uniqueItemId(item, index, used) {
+  const rawId = typeof item.id === 'string' ? item.id.trim() : '';
+  const base = rawId || itemIdFromName(item.n, index);
+  let id = base;
+  let suffix = 2;
+
+  while (used.has(id)) {
+    id = `${base}-${suffix}`;
+    suffix++;
+  }
+
+  used.add(id);
+  return id;
+}
+
+function normalizeItems(items) {
+  const used = new Set();
+  return items.map((item, index) => ({
+    ...item,
+    id: uniqueItemId(item, index, used)
+  }));
+}
+
+function normalizeModules(modules) {
+  const used = new Set();
+  return modules.map((mod, index) => ({
+    ...mod,
+    id: uniqueModuleId(mod, index, used),
+    items: Array.isArray(mod.items) ? normalizeItems(mod.items) : mod.items
+  }));
+}
+
+const DEFAULT_MODULES = normalizeModules([
   { name: "Admin", items: [{ n: "Painel admin", s: "todo" }] },
   {
     name: "Cadastro — Produto",
@@ -118,19 +184,98 @@ const DEFAULT_MODULES = [
   { name: "Relatórios",   items: [{ n: "A definir", s: "nd" }] },
   { name: "Integrações",  items: [{ n: "A definir", s: "nd" }] },
   { name: "CRM",          items: [{ n: "A definir", s: "nd" }] }
-];
+]);
 
 function getModules() {
-  const data = readJSON(modulesPath());
-  if (!data) {
+  const stored = readJSON(modulesPath());
+  if (!stored) {
     writeJSON(modulesPath(), DEFAULT_MODULES);
     return DEFAULT_MODULES;
   }
-  return data;
+
+  const modules = normalizeModules(stored);
+  if (JSON.stringify(modules) !== JSON.stringify(stored)) {
+    writeJSON(modulesPath(), modules);
+  }
+  return modules;
 }
 
 function writeModules(modules) {
-  writeJSON(modulesPath(), modules);
+  const normalized = normalizeModules(modules);
+  writeJSON(modulesPath(), normalized);
+  return normalized;
+}
+
+function addModule(module) {
+  const modules = getModules();
+  const next = writeModules([...modules, { id: module.id, name: module.name, items: [] }]);
+  return next[next.length - 1];
+}
+
+function updateModule(id, updates) {
+  const modules = getModules();
+  const index = modules.findIndex(mod => mod.id === id);
+  if (index === -1) return null;
+
+  modules[index] = { ...modules[index], ...updates };
+  return writeModules(modules)[index];
+}
+
+function removeModule(id) {
+  const modules = getModules();
+  const next = modules.filter(mod => mod.id !== id);
+  if (next.length === modules.length) return false;
+
+  writeModules(next);
+  return true;
+}
+
+function reorderModules(ids) {
+  const modules = getModules();
+  const byId = new Map(modules.map(mod => [mod.id, mod]));
+
+  if (ids.length !== modules.length) return null;
+  if (new Set(ids).size !== ids.length) return null;
+  if (!ids.every(id => byId.has(id))) return null;
+
+  return writeModules(ids.map(id => byId.get(id)));
+}
+
+function addItem(moduleId, item) {
+  const modules = getModules();
+  const moduleIndex = modules.findIndex(mod => mod.id === moduleId);
+  if (moduleIndex === -1) return null;
+
+  modules[moduleIndex].items.push({ id: item.id, n: item.n, s: item.s });
+  const next = writeModules(modules);
+  const items = next[moduleIndex].items;
+  return items[items.length - 1];
+}
+
+function updateItem(moduleId, itemId, updates) {
+  const modules = getModules();
+  const moduleIndex = modules.findIndex(mod => mod.id === moduleId);
+  if (moduleIndex === -1) return null;
+
+  const itemIndex = modules[moduleIndex].items.findIndex(item => item.id === itemId);
+  if (itemIndex === -1) return null;
+
+  modules[moduleIndex].items[itemIndex] = { ...modules[moduleIndex].items[itemIndex], ...updates };
+  return writeModules(modules)[moduleIndex].items[itemIndex];
+}
+
+function removeItem(moduleId, itemId) {
+  const modules = getModules();
+  const moduleIndex = modules.findIndex(mod => mod.id === moduleId);
+  if (moduleIndex === -1) return false;
+
+  const items = modules[moduleIndex].items;
+  const nextItems = items.filter(item => item.id !== itemId);
+  if (nextItems.length === items.length) return false;
+
+  modules[moduleIndex].items = nextItems;
+  writeModules(modules);
+  return true;
 }
 
 function getHistory() {
@@ -174,7 +319,9 @@ function appendSnapshot(modules) {
 
 module.exports = {
   getUsers, writeUsers, findUserByEmail, findUserById, addUser, removeUser,
-  getModules, writeModules,
+  getModules, writeModules, normalizeModules,
+  addModule, updateModule, removeModule, reorderModules,
+  addItem, updateItem, removeItem,
   getHistory, appendSnapshot, pruneHistory,
   DEFAULT_MODULES
 };

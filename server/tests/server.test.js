@@ -114,7 +114,9 @@ test('PUT /api/modules succeeds for editor', async () => {
     .set('Cookie', cookie)
     .send(newModules);
   assert.equal(res.status, 200);
+  assert.equal(res.body[0].id, 'mod-editado');
   assert.equal(res.body[0].name, 'Editado');
+  assert.equal(res.body[0].items[0].id, 'item-i');
 });
 
 test('PUT /api/modules rejects non-array body', async () => {
@@ -124,6 +126,109 @@ test('PUT /api/modules rejects non-array body', async () => {
     .set('Cookie', cookie)
     .send({ notAnArray: true });
   assert.equal(res.status, 400);
+});
+
+test('PUT /api/modules rejects non-string module id', async () => {
+  const cookie = await loginAs('admin');
+  const res = await request(app)
+    .put('/api/modules')
+    .set('Cookie', cookie)
+    .send([{ id: 123, name: 'X', items: [] }]);
+  assert.equal(res.status, 400);
+});
+
+test('PUT /api/modules rejects non-string item id', async () => {
+  const cookie = await loginAs('admin');
+  const res = await request(app)
+    .put('/api/modules')
+    .set('Cookie', cookie)
+    .send([{ id: 'mod-x', name: 'X', items: [{ id: 123, n: 'i', s: 'done' }] }]);
+  assert.equal(res.status, 400);
+});
+
+test('POST /api/modules creates a module', async () => {
+  const cookie = await loginAs('editor');
+  const res = await request(app)
+    .post('/api/modules')
+    .set('Cookie', cookie)
+    .send({ id: 'mod-created', name: 'Criado' });
+  assert.equal(res.status, 201);
+  assert.equal(res.body.id, 'mod-created');
+  assert.equal(res.body.name, 'Criado');
+  assert.deepStrictEqual(res.body.items, []);
+});
+
+test('PATCH /api/modules/:moduleId renames a module', async () => {
+  const cookie = await loginAs('editor');
+  const res = await request(app)
+    .patch('/api/modules/mod-created')
+    .set('Cookie', cookie)
+    .send({ name: 'Renomeado' });
+  assert.equal(res.status, 200);
+  assert.equal(res.body.id, 'mod-created');
+  assert.equal(res.body.name, 'Renomeado');
+});
+
+test('POST /api/modules/:moduleId/items creates an item', async () => {
+  const cookie = await loginAs('editor');
+  const res = await request(app)
+    .post('/api/modules/mod-created/items')
+    .set('Cookie', cookie)
+    .send({ id: 'item-created', n: 'Item criado', s: 'todo' });
+  assert.equal(res.status, 201);
+  assert.equal(res.body.id, 'item-created');
+  assert.equal(res.body.n, 'Item criado');
+  assert.equal(res.body.s, 'todo');
+});
+
+test('PATCH /api/modules/:moduleId/items/:itemId updates an item', async () => {
+  const cookie = await loginAs('editor');
+  const res = await request(app)
+    .patch('/api/modules/mod-created/items/item-created')
+    .set('Cookie', cookie)
+    .send({ s: 'done' });
+  assert.equal(res.status, 200);
+  assert.equal(res.body.id, 'item-created');
+  assert.equal(res.body.s, 'done');
+});
+
+test('DELETE /api/modules/:moduleId/items/:itemId removes an item', async () => {
+  const cookie = await loginAs('editor');
+  const res = await request(app)
+    .delete('/api/modules/mod-created/items/item-created')
+    .set('Cookie', cookie);
+  assert.equal(res.status, 200);
+  assert.deepStrictEqual(res.body, { ok: true });
+});
+
+test('POST /api/modules/reorder reorders modules', async () => {
+  const cookie = await loginAs('editor');
+  const listRes = await request(app).get('/api/modules').set('Cookie', cookie);
+  const ids = listRes.body.map(mod => mod.id).reverse();
+  const res = await request(app)
+    .post('/api/modules/reorder')
+    .set('Cookie', cookie)
+    .send({ ids });
+  assert.equal(res.status, 200);
+  assert.deepStrictEqual(res.body.map(mod => mod.id), ids);
+});
+
+test('DELETE /api/modules/:moduleId removes a module', async () => {
+  const cookie = await loginAs('editor');
+  const res = await request(app)
+    .delete('/api/modules/mod-created')
+    .set('Cookie', cookie);
+  assert.equal(res.status, 200);
+  assert.deepStrictEqual(res.body, { ok: true });
+});
+
+test('granular module writes are forbidden for viewer', async () => {
+  const cookie = await loginAs('viewer');
+  const res = await request(app)
+    .post('/api/modules')
+    .set('Cookie', cookie)
+    .send({ name: 'Bloqueado' });
+  assert.equal(res.status, 403);
 });
 
 test('POST /api/modules/reset restores DEFAULT_MODULES for admin', async () => {

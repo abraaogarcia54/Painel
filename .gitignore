@@ -4,4 +4,5 @@ node_modules/
 .env
 server/data/users.json
 server/data/modules.json
+server/data/history.json
 *.log
